@@ -1,6 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Mon Mar  9 09:07:40 2026
 import streamlit as st
 import pandas as pd
 
@@ -18,47 +15,47 @@ st.set_page_config(
 # ESTILO CORPORATIVO TALMA
 # --------------------------------------------------
 
-st.markdown("""
-<style>
+st.markdown(
+    """
+    <style>
 
-.main {
-    background-color: #f5f7fb;
-}
+    .block-container{
+        border: 4px solid #003A8F;
+        padding: 2rem;
+        border-radius: 15px;
+    }
 
-.block-container{
-    border:4px solid #003A8F;
-    padding:2rem;
-    border-radius:15px;
-}
+    h1,h2,h3{
+        color:#003A8F;
+    }
 
-h1,h2,h3{
-    color:#003A8F;
-}
+    .metric-box{
+        text-align:center;
+        padding:20px;
+        border-radius:12px;
+        font-weight:bold;
+        font-size:20px;
+    }
 
-.metric-box{
-    text-align:center;
-    padding:20px;
-    border-radius:12px;
-    font-weight:bold;
-}
+    .verde{
+        background-color:#28a745;
+        color:white;
+    }
 
-.verde{
-    background-color:#28a745;
-    color:white;
-}
+    .amarillo{
+        background-color:#ffc107;
+        color:black;
+    }
 
-.amarillo{
-    background-color:#ffc107;
-    color:black;
-}
+    .rojo{
+        background-color:#dc3545;
+        color:white;
+    }
 
-.rojo{
-    background-color:#dc3545;
-    color:white;
-}
-
-</style>
-""", unsafe_allow_html=True)
+    </style>
+    """,
+    unsafe_allow_html=True
+)
 
 # --------------------------------------------------
 # TITULO
@@ -67,10 +64,10 @@ h1,h2,h3{
 st.title("📊 Control de Capacitaciones")
 
 # --------------------------------------------------
-# MENSAJE SOBRE NOMBRE DE HOJA
+# MENSAJE SOBRE LA HOJA
 # --------------------------------------------------
 
-st.info("⚠️ El archivo Excel debe contener una hoja llamada **'Acumulado Portal'**.")
+st.info("⚠️ El archivo Excel debe tener una hoja llamada **Acumulado Portal**.")
 
 # --------------------------------------------------
 # SUBIR ARCHIVO
@@ -80,21 +77,22 @@ archivo = st.file_uploader("📂 Cargar archivo Excel", type=["xlsx"])
 
 if archivo:
 
+    excel = pd.ExcelFile(archivo)
+
     # --------------------------------------------------
-    # VALIDAR HOJA
+    # VALIDAR NOMBRE DE HOJA
     # --------------------------------------------------
 
-    hojas = pd.ExcelFile(archivo).sheet_names
+    if "Acumulado Portal" not in excel.sheet_names:
 
-    if "Acumulado Portal" not in hojas:
-        st.error("❌ El archivo no contiene la hoja **'Acumulado Portal'**. Verifique el nombre.")
+        st.error("❌ La hoja del Excel debe llamarse **Acumulado Portal**.")
         st.stop()
 
     # --------------------------------------------------
     # LEER DATA
     # --------------------------------------------------
 
-    df = pd.read_excel(archivo, sheet_name="Acumulado Portal", header=1)
+    df = pd.read_excel(excel, sheet_name="Acumulado Portal")
 
     st.success("Archivo cargado correctamente.")
 
@@ -102,16 +100,19 @@ if archivo:
     # BUSCAR COLUMNAS DE ESTADO
     # --------------------------------------------------
 
-    columnas_estado = [col for col in df.columns if "ESTADO" in str(col).upper()]
+    columnas_estado = [c for c in df.columns if "ESTADO" in str(c).upper()]
 
     vigentes = 0
     por_vencer = 0
     vencidos = 0
 
     for col in columnas_estado:
-        vigentes += (df[col] == "VIGENTE").sum()
-        por_vencer += (df[col] == "POR VENCER").sum()
-        vencidos += (df[col] == "VENCIDO").sum()
+
+        vigentes += (df[col].astype(str).str.upper() == "VIGENTE").sum()
+
+        por_vencer += (df[col].astype(str).str.upper() == "POR VENCER").sum()
+
+        vencidos += (df[col].astype(str).str.upper() == "VENCIDO").sum()
 
     # --------------------------------------------------
     # RESUMEN
@@ -149,4 +150,4 @@ if archivo:
 
 else:
 
-    st.warning("Sube un archivo para comenzar.")
+    st.warning("Sube un archivo Excel para comenzar.")
