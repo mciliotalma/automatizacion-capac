@@ -15,10 +15,9 @@ import openpyxl
 from datetime import datetime
 from io import BytesIO
 from openpyxl.styles import Alignment, Border, Side, Font, PatternFill
-from openpyxl.utils import get_column_letter
 
 # --------------------------------------------------
-# CONFIGURACIÓN DE PÁGINA
+# CONFIGURACIÓN
 # --------------------------------------------------
 
 st.set_page_config(
@@ -28,7 +27,7 @@ st.set_page_config(
 )
 
 # --------------------------------------------------
-# CSS CORPORATIVO TALMA
+# ESTILO TALMA
 # --------------------------------------------------
 
 st.markdown("""
@@ -60,7 +59,7 @@ border-radius:8px;
 """, unsafe_allow_html=True)
 
 # --------------------------------------------------
-# HEADER CON LOGO
+# HEADER
 # --------------------------------------------------
 
 col1, col2 = st.columns([1,6])
@@ -89,74 +88,18 @@ with col2:
 st.write("")
 
 # --------------------------------------------------
-# PLANTILLA DE FORMATO
-# --------------------------------------------------
-
-st.markdown("## 📄 Formato requerido del archivo")
-
-st.info("Puedes visualizar o descargar una plantilla para subir correctamente el archivo.")
-
-data_ejemplo = {
-
-    "DNI":[ "Cedula 1","Cedula 2","Cedula 3"],
-    "NOMBRE COMPLETO":[ "Nombre 1","Nombre 2","Nombre 3"],
-    "CARGO":[ "Cargo 1","Cargo 2","Cargo 3"],
-    "F. DE INGRESO":[ "01/01/2024","05/02/2023","10/03/2022"],
-    "OFICINA":[ "Oficina 1","Oficina 2","Oficina 3"],
-    "CENTRO COSTO":[ "Centro 1","Centro 2","Centro 3"],
-
-    "ADOC BÁSICO AV - F. DICTADO":[ "01/02/2024","",""],
-    "ADOC BÁSICO AV - VENCIMIENTO":[ "01/02/2026","",""],
-
-    "ARM - F. DICTADO":[ "05/03/2024","10/04/2024",""],
-    "ARM - VENCIMIENTO":[ "05/03/2026","10/04/2026",""],
-
-    "AVSEC CAT14 INI - F. DICTADO":[ "12/05/2024","15/06/2024","20/07/2024"],
-    "AVSEC CAT14 INI - VENCIMIENTO":[ "12/05/2026","15/06/2026","20/07/2026"]
-
-}
-
-df_ejemplo = pd.DataFrame(data_ejemplo)
-
-st.dataframe(
-    df_ejemplo,
-    use_container_width=True
-)
-
-# Crear plantilla Excel
-
-output_template = BytesIO()
-
-df_ejemplo.to_excel(output_template, index=False)
-
-output_template.seek(0)
-
-st.download_button(
-    label="⬇️ Descargar plantilla de formato",
-    data=output_template,
-    file_name="Plantilla_Formato_Capacitaciones_TALMA.xlsx",
-    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-)
-
-st.markdown("---")
-
-# --------------------------------------------------
-# CARGAR ARCHIVO REAL
+# CARGAR ARCHIVO
 # --------------------------------------------------
 
 st.markdown("## 📂 Cargar archivo de capacitaciones")
 
-col1,col2,col3 = st.columns([1,2,1])
-
-with col2:
-
-    uploaded_file = st.file_uploader(
-        "Arrastra o selecciona tu archivo Excel",
-        type=["xlsx","xlsm"]
-    )
+uploaded_file = st.file_uploader(
+    "Arrastra o selecciona tu archivo Excel",
+    type=["xlsx","xlsm"]
+)
 
 # --------------------------------------------------
-# PROCESAR ARCHIVO
+# PROCESAR
 # --------------------------------------------------
 
 if uploaded_file is not None:
@@ -164,84 +107,115 @@ if uploaded_file is not None:
     st.success("Archivo cargado correctamente")
 
     wb = openpyxl.load_workbook(uploaded_file, data_only=True)
-
     ws = wb['Acumulado Portal']
 
-    headers = [
-        "DNI","Nombre Completo","Cargo","F. Ingreso","Oficina",
-        "Centro Costo","Centro Costo Codigo","Curso","F. Dictado",
-        "Nota","Vencimiento","Venc. Dias","Estado"
-    ]
+    ult_col = ws.max_column
+    ult_row = ws.max_row
+
+    # --------------------------------------------------
+    # LEER DOBLE ENCABEZADO
+    # --------------------------------------------------
+
+    header_curso = [ws.cell(row=1, column=i).value for i in range(1, ult_col+1)]
+    header_sub = [ws.cell(row=2, column=i).value for i in range(1, ult_col+1)]
+
+    columnas = []
+
+    for c1, c2 in zip(header_curso, header_sub):
+
+        if c2 is None:
+            columnas.append(c1)
+
+        elif c1 is None:
+            columnas.append(c2)
+
+        else:
+            columnas.append(f"{c1} - {c2}")
+
+    # --------------------------------------------------
+    # LEER DATOS
+    # --------------------------------------------------
 
     data = []
 
-    ult_fila = ws.max_row
-    ult_col = ws.max_column
+    for row in ws.iter_rows(min_row=3, values_only=True):
+        data.append(row)
 
-    cursos = [ws.cell(row=1, column=j).value for j in range(8, ult_col+1, 5)]
-
-    # --------------------------------------------------
-    # TRANSFORMAR DATOS
-    # --------------------------------------------------
-
-    for i in range(2, ult_fila + 1):
-
-        fila = [cell.value for cell in ws[i]]
-
-        if len(fila) < 7:
-            continue
-
-        dni = fila[0]
-
-        if str(dni).strip().upper() == "DNI":
-            continue
-
-        nombre = fila[1]
-        cargo = fila[2]
-        f_ingreso = fila[3]
-        oficina = fila[4]
-        centro_costo = fila[5]
-        centro_costo_codigo = fila[6]
-
-        for idx, j in enumerate(range(7, ult_col, 5)):
-
-            if j + 4 >= len(fila):
-                break
-
-            curso = cursos[idx]
-            f_dictado = fila[j]
-            nota = fila[j+1]
-            vencimiento = fila[j+2]
-            venc_dias = fila[j+3]
-            estado = fila[j+4]
-
-            if any([curso, f_dictado, nota, vencimiento, venc_dias, estado]):
-
-                data.append([
-                    dni, nombre, cargo, f_ingreso, oficina,
-                    centro_costo, centro_costo_codigo,
-                    curso, f_dictado, nota, vencimiento,
-                    venc_dias, estado
-                ])
-
-    df = pd.DataFrame(data, columns=headers)
+    df = pd.DataFrame(data, columns=columnas)
 
     # --------------------------------------------------
-    # CALCULAR ESTADOS
+    # LIMPIAR COLUMNAS BASE
+    # --------------------------------------------------
+
+    df = df.rename(columns={
+        "NOMBRE COMPLETO":"Nombre Completo",
+        "F. DE INGRESO":"F. Ingreso",
+        "CENTRO COSTO CODIGO":"Centro Costo Codigo"
+    })
+
+    # --------------------------------------------------
+    # IDENTIFICAR CURSOS
+    # --------------------------------------------------
+
+    cursos = list(set([
+        col.split(" - ")[0]
+        for col in df.columns
+        if " - " in col
+    ]))
+
+    # --------------------------------------------------
+    # TRANSFORMAR A FORMATO LARGO
+    # --------------------------------------------------
+
+    registros = []
+
+    for _, row in df.iterrows():
+
+        for curso in cursos:
+
+            f_dictado = row.get(f"{curso} - F. DICTADO")
+            nota = row.get(f"{curso} - NOTA")
+            venc = row.get(f"{curso} - VENCIMIENTO")
+            dias = row.get(f"{curso} - VENC. DIAS")
+            estado = row.get(f"{curso} - ESTADO")
+
+            if pd.notna(f_dictado) or pd.notna(venc):
+
+                registros.append({
+
+                    "DNI":row["DNI"],
+                    "Nombre Completo":row["Nombre Completo"],
+                    "Cargo":row["CARGO"],
+                    "F. Ingreso":row["F. Ingreso"],
+                    "Oficina":row["OFICINA"],
+                    "Centro Costo":row["CENTRO COSTO"],
+                    "Centro Costo Codigo":row["Centro Costo Codigo"],
+
+                    "Curso":curso,
+                    "F. Dictado":f_dictado,
+                    "Nota":nota,
+                    "Vencimiento":venc,
+                    "Venc. Dias":dias,
+                    "Estado":estado
+                })
+
+    df_final = pd.DataFrame(registros)
+
+    # --------------------------------------------------
+    # CALCULAR VENCIMIENTOS
     # --------------------------------------------------
 
     hoy = pd.Timestamp.today().normalize()
 
-    df['F. Dictado'] = pd.to_datetime(df['F. Dictado'], errors='coerce', dayfirst=True)
+    df_final["F. Dictado"] = pd.to_datetime(df_final["F. Dictado"], errors="coerce")
+    df_final["Vencimiento"] = pd.to_datetime(df_final["Vencimiento"], errors="coerce")
 
-    df['Vencimiento'] = pd.to_datetime(df['Vencimiento'], errors='coerce', dayfirst=True)
+    df_final["Venc. Dias"] = (df_final["Vencimiento"] - hoy).dt.days
 
-    df['Venc. Dias'] = (df['Vencimiento'] - hoy).dt.days
-
-    df.loc[df['Vencimiento'].isna(),'Estado'] = 'VIGENTE'
-    df.loc[df['Venc. Dias'] < 0,'Estado'] = 'VENCIDO'
-    df.loc[(df['Venc. Dias'] >=0) & (df['Venc. Dias'] <=30),'Estado'] = 'POR VENCER'
-    df.loc[df['Venc. Dias'] > 30,'Estado'] = 'VIGENTE'
+    df_final.loc[df_final["Vencimiento"].isna(),"Estado"] = "VIGENTE"
+    df_final.loc[df_final["Venc. Dias"] < 0,"Estado"] = "VENCIDO"
+    df_final.loc[(df_final["Venc. Dias"] >=0) & (df_final["Venc. Dias"]<=30),"Estado"] = "POR VENCER"
+    df_final.loc[df_final["Venc. Dias"] > 30,"Estado"] = "VIGENTE"
 
     # --------------------------------------------------
     # KPIs
@@ -249,9 +223,9 @@ if uploaded_file is not None:
 
     st.markdown("### 📈 Resumen de Capacitaciones")
 
-    vigentes = (df["Estado"]=="VIGENTE").sum()
-    por_vencer = (df["Estado"]=="POR VENCER").sum()
-    vencidos = (df["Estado"]=="VENCIDO").sum()
+    vigentes = (df_final["Estado"]=="VIGENTE").sum()
+    por_vencer = (df_final["Estado"]=="POR VENCER").sum()
+    vencidos = (df_final["Estado"]=="VENCIDO").sum()
 
     c1,c2,c3 = st.columns(3)
 
@@ -266,53 +240,50 @@ if uploaded_file is not None:
     st.markdown("### 📊 Vista previa")
 
     st.dataframe(
-        df,
+        df_final,
         use_container_width=True,
         height=500
     )
 
     # --------------------------------------------------
-    # GENERAR EXCEL FORMATEADO
+    # EXPORTAR EXCEL
     # --------------------------------------------------
 
     output = BytesIO()
-
-    df.to_excel(output, index=False)
-
+    df_final.to_excel(output, index=False)
     output.seek(0)
 
     wb2 = openpyxl.load_workbook(output)
-
     ws2 = wb2.active
 
     thin = Side(style='thin')
 
-    border = Border(left=thin,right=thin,top=thin,bottom=thin)
+    border = Border(
+        left=thin,right=thin,top=thin,bottom=thin
+    )
 
     fill_map = {
         "VENCIDO": "FF4C4C",
-        "POR VENCER": "FFEB9C",
+        "POR VENCER": "FFF2CC",
         "VIGENTE": "A7D129"
     }
 
     for row in ws2.iter_rows(min_row=2):
 
-        estado_cell = row[12]
+        estado = row[12].value
 
-        estado_value = estado_cell.value
-
-        fill_color = fill_map.get(str(estado_value).upper(), None)
+        color = fill_map.get(str(estado).upper(),None)
 
         for cell in row:
 
             cell.border = border
-            cell.alignment = Alignment(wrap_text=True, vertical='top')
+            cell.alignment = Alignment(wrap_text=True)
 
-            if fill_color:
+            if color:
 
                 cell.fill = PatternFill(
-                    start_color=fill_color,
-                    end_color=fill_color,
+                    start_color=color,
+                    end_color=color,
                     fill_type="solid"
                 )
 
@@ -324,7 +295,6 @@ if uploaded_file is not None:
     output_final = BytesIO()
 
     wb2.save(output_final)
-
     output_final.seek(0)
 
     st.markdown("### 📥 Descargar reporte")
@@ -332,6 +302,6 @@ if uploaded_file is not None:
     st.download_button(
         "⬇️ Descargar Excel Profesional TALMA",
         data=output_final,
-        file_name="Capacitaciones_Profesional_TALMA.xlsx",
+        file_name="Capacitaciones_TALMA_Profesional.xlsx",
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
