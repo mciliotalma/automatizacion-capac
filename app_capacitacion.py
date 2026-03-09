@@ -6,19 +6,12 @@ Created on Mon Mar  9 09:07:40 2026
 """
 # -*- coding: utf-8 -*-
 """
-Created on Mon Mar  9 09:07:40 2026
-
-@author: mcilio
-"""
-# -*- coding: utf-8 -*-
-"""
 Reporte Profesional de Capacitaciones TALMA
 """
 
 import streamlit as st
 import pandas as pd
 import openpyxl
-from datetime import datetime
 from io import BytesIO
 from openpyxl.styles import Alignment, Border, Side, Font, PatternFill
 
@@ -94,89 +87,80 @@ with col2:
 st.write("")
 
 # --------------------------------------------------
-# PLANTILLA REAL
+# VISTA PREVIA DEL FORMATO
 # --------------------------------------------------
 
-st.markdown("## 📄 Descargar plantilla oficial")
+st.markdown("## 📄 Formato requerido del archivo")
 
-st.info("Utiliza esta plantilla para cargar correctamente el archivo.")
+st.info("El archivo Excel debe tener exactamente esta estructura.")
 
-wb_template = openpyxl.Workbook()
-ws_t = wb_template.active
-ws_t.title = "Acumulado Portal"
+tabla_html = """
+<table style="border-collapse:collapse;width:100%;font-size:14px">
 
-base_headers = [
-    "DNI","NOMBRE COMPLETO","CARGO","F. DE INGRESO",
-    "OFICINA","CENTRO COSTO","CENTRO COSTO CODIGO"
-]
+<tr style="background:#f0f0f0;text-align:center;font-weight:bold">
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th colspan="5">Curso1</th>
+<th colspan="5">Curso2</th>
+</tr>
 
-cursos = ["Curso1","Curso2"]
+<tr style="background:#e8e8e8;text-align:center;font-weight:bold">
 
-sub_headers = ["F. DICTADO","NOTA","VENCIMIENTO","VENC. DIAS","ESTADO"]
+<th>DNI</th>
+<th>NOMBRE COMPLETO</th>
+<th>CARGO</th>
+<th>F. DE INGRESO</th>
+<th>OFICINA</th>
+<th>CENTRO COSTO</th>
+<th>CENTRO COSTO CODIGO</th>
 
-col = 1
+<th>F. DICTADO</th>
+<th>NOTA</th>
+<th>VENCIMIENTO</th>
+<th>VENC. DIAS</th>
+<th>ESTADO</th>
 
-for h in base_headers:
-    ws_t.cell(row=2,column=col,value=h)
-    ws_t.merge_cells(start_row=1,start_column=col,end_row=2,end_column=col)
-    col += 1
+<th>F. DICTADO</th>
+<th>NOTA</th>
+<th>VENCIMIENTO</th>
+<th>VENC. DIAS</th>
+<th>ESTADO</th>
 
-for curso in cursos:
+</tr>
 
-    start_col = col
+<tr style="text-align:center">
 
-    for sub in sub_headers:
-        ws_t.cell(row=2,column=col,value=sub)
-        col += 1
+<td>---</td>
+<td>---</td>
+<td>---</td>
+<td>dd/mm/yyyy</td>
+<td>---</td>
+<td>---</td>
+<td>---</td>
 
-    ws_t.merge_cells(
-        start_row=1,
-        start_column=start_col,
-        end_row=1,
-        end_column=start_col+4
-    )
+<td>dd/mm/yyyy</td>
+<td>---</td>
+<td>dd/mm/yyyy</td>
+<td>---</td>
+<td>---</td>
 
-    ws_t.cell(row=1,column=start_col,value=curso)
+<td>dd/mm/yyyy</td>
+<td>---</td>
+<td>dd/mm/yyyy</td>
+<td>---</td>
+<td>---</td>
 
-thin = Side(style='thin')
-border = Border(left=thin,right=thin,top=thin,bottom=thin)
+</tr>
 
-for row in ws_t.iter_rows(min_row=1,max_row=2):
-    for cell in row:
-        cell.border = border
-        cell.alignment = Alignment(horizontal="center",vertical="center",wrap_text=True)
-        cell.font = Font(bold=True)
+</table>
+"""
 
-ws_t.append([
-    "0954082780",
-    "ABAD HUACON SUSANNE PAMELA",
-    "AGENTE DE SERVICIO AL PASAJERO",
-    "16/10/2023",
-    "GUAYAQUIL",
-    "PAX GYE",
-    "15030102",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-])
-
-output_template = BytesIO()
-wb_template.save(output_template)
-output_template.seek(0)
-
-st.download_button(
-    "⬇️ Descargar plantilla",
-    data=output_template,
-    file_name="Plantilla_Capacitaciones_TALMA.xlsx",
-    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-)
+st.markdown(tabla_html, unsafe_allow_html=True)
 
 st.markdown("---")
 
@@ -205,6 +189,7 @@ if uploaded_file is not None:
     ult_fila = ws.max_row
     ult_col = ws.max_column
 
+    # detectar cursos
     cursos = []
 
     for j in range(8, ult_col+1, 5):
@@ -223,11 +208,10 @@ if uploaded_file is not None:
 
         fila = [cell.value for cell in ws[i]]
 
-        dni = fila[0]
-
-        if dni is None:
+        if fila[0] is None:
             continue
 
+        dni = fila[0]
         nombre = fila[1]
         cargo = fila[2]
         f_ingreso = fila[3]
@@ -304,7 +288,7 @@ if uploaded_file is not None:
     )
 
     # --------------------------------------------------
-    # EXPORTAR EXCEL PROFESIONAL
+    # EXPORTAR EXCEL
     # --------------------------------------------------
 
     output = BytesIO()
