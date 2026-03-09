@@ -224,34 +224,49 @@ if uploaded_file:
 
     st.dataframe(df.style.applymap(color_estado), use_container_width=True, height=500)
 
-    # EXPORTAR EXCEL
-    output = BytesIO()
-    df.to_excel(output,index=False)
-    output.seek(0)
-    wb2 = openpyxl.load_workbook(output)
-    ws2 = wb2.active
+    # EXPORTAR EXCEL CON AJUSTE DE COLUMNAS Y SPINNER
+    with st.spinner('⏳ Generando archivo Excel...'):
+        output = BytesIO()
+        df.to_excel(output, index=False)
+        output.seek(0)
+        wb2 = openpyxl.load_workbook(output)
+        ws2 = wb2.active
 
-    thin = Side(style="thin")
-    border = Border(left=thin,right=thin,top=thin,bottom=thin)
+        thin = Side(style="thin")
+        border = Border(left=thin, right=thin, top=thin, bottom=thin)
 
-    fill_map = {"VENCIDO":"FF4C4C","POR VENCER":"FFF2CC","VIGENTE":"A7D129"}
+        fill_map = {"VENCIDO": "FF4C4C", "POR VENCER": "FFF2CC", "VIGENTE": "A7D129"}
 
-    for row in ws2.iter_rows(min_row=2):
-        estado = row[12].value
-        color = fill_map.get(str(estado).upper(),None)
-        for cell in row:
+        for row in ws2.iter_rows(min_row=2):
+            estado = row[12].value
+            color = fill_map.get(str(estado).upper(), None)
+            for cell in row:
+                cell.border = border
+                cell.alignment = Alignment(wrap_text=True, vertical='top')
+                if color:
+                    cell.fill = PatternFill(start_color=color, end_color=color, fill_type="solid")
+
+        for cell in ws2[1]:
+            cell.font = Font(bold=True)
             cell.border = border
-            cell.alignment = Alignment(wrap_text=True)
-            if color:
-                cell.fill = PatternFill(start_color=color,end_color=color,fill_type="solid")
+            cell.alignment = Alignment(wrap_text=True, vertical='center')
 
-    for cell in ws2[1]:
-        cell.font = Font(bold=True)
-        cell.border = border
+        # Ajustar ancho de columnas automáticamente
+        for col in ws2.columns:
+            max_length = 0
+            col_letter = col[0].column_letter
+            for cell in col:
+                try:
+                    if cell.value:
+                        max_length = max(max_length, len(str(cell.value)))
+                except:
+                    pass
+            adjusted_width = max_length + 2
+            ws2.column_dimensions[col_letter].width = adjusted_width
 
-    output_final = BytesIO()
-    wb2.save(output_final)
-    output_final.seek(0)
+        output_final = BytesIO()
+        wb2.save(output_final)
+        output_final.seek(0)
 
     st.markdown("### 📥 Descargar reporte")
     st.download_button(
