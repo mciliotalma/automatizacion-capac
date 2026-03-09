@@ -1,342 +1,152 @@
 # -*- coding: utf-8 -*-
 """
 Created on Mon Mar  9 09:07:40 2026
-
-@author: mcilio
-"""
-# -*- coding: utf-8 -*-
-"""
-Reporte Profesional de Capacitaciones TALMA
-"""
-
 import streamlit as st
 import pandas as pd
-import openpyxl
-from io import BytesIO
-from openpyxl.styles import Alignment, Border, Side, Font, PatternFill
 
 # --------------------------------------------------
-# CONFIGURACIÓN
+# CONFIGURACION DE PAGINA
 # --------------------------------------------------
 
 st.set_page_config(
-    page_title="Reporte Capacitaciones TALMA",
+    page_title="Control de Capacitaciones",
     page_icon="📊",
     layout="wide"
 )
 
 # --------------------------------------------------
-# CSS CORPORATIVO
+# ESTILO CORPORATIVO TALMA
 # --------------------------------------------------
 
 st.markdown("""
 <style>
 
-.main{
-background-color:#F4F7FB;
+.main {
+    background-color: #f5f7fb;
+}
+
+.block-container{
+    border:4px solid #003A8F;
+    padding:2rem;
+    border-radius:15px;
 }
 
 h1,h2,h3{
-color:#004C97;
+    color:#003A8F;
 }
 
-.stButton>button{
-background-color:#A7D129;
-color:#004C97;
-font-weight:bold;
-border-radius:8px;
+.metric-box{
+    text-align:center;
+    padding:20px;
+    border-radius:12px;
+    font-weight:bold;
 }
 
-.stDownloadButton>button{
-background-color:#A7D129;
-color:#004C97;
-font-weight:bold;
-border-radius:8px;
+.verde{
+    background-color:#28a745;
+    color:white;
+}
+
+.amarillo{
+    background-color:#ffc107;
+    color:black;
+}
+
+.rojo{
+    background-color:#dc3545;
+    color:white;
 }
 
 </style>
 """, unsafe_allow_html=True)
 
 # --------------------------------------------------
-# HEADER
+# TITULO
 # --------------------------------------------------
 
-col1, col2 = st.columns([1,6])
-
-with col1:
-    st.image("logo.jpg", width=120)
-
-with col2:
-    st.markdown("""
-    <div style="
-    background: linear-gradient(90deg,#004C97,#005EB8);
-    padding:20px;
-    border-radius:12px;">
-    
-    <h2 style="color:white;margin:0;">
-    📊 Reporte Profesional de Capacitaciones TALMA
-    </h2>
-    
-    <p style="color:white;margin:0;">
-    Sistema automatizado de control de vigencia de capacitaciones
-    </p>
-    
-    </div>
-    """, unsafe_allow_html=True)
-
-st.write("")
+st.title("📊 Control de Capacitaciones")
 
 # --------------------------------------------------
-# VISTA PREVIA DEL FORMATO
+# MENSAJE SOBRE NOMBRE DE HOJA
 # --------------------------------------------------
 
-st.markdown("## 📄 Formato requerido del archivo")
-
-st.info("El archivo Excel debe tener exactamente esta estructura.")
-
-tabla_html = """
-<table style="border-collapse:collapse;width:100%;font-size:14px">
-
-<tr style="background:#f0f0f0;text-align:center;font-weight:bold">
-<th></th>
-<th></th>
-<th></th>
-<th></th>
-<th></th>
-<th></th>
-<th></th>
-<th colspan="5">Curso1</th>
-<th colspan="5">Curso2</th>
-</tr>
-
-<tr style="background:#e8e8e8;text-align:center;font-weight:bold">
-
-<th>DNI</th>
-<th>NOMBRE COMPLETO</th>
-<th>CARGO</th>
-<th>F. DE INGRESO</th>
-<th>OFICINA</th>
-<th>CENTRO COSTO</th>
-<th>CENTRO COSTO CODIGO</th>
-
-<th>F. DICTADO</th>
-<th>NOTA</th>
-<th>VENCIMIENTO</th>
-<th>VENC. DIAS</th>
-<th>ESTADO</th>
-
-<th>F. DICTADO</th>
-<th>NOTA</th>
-<th>VENCIMIENTO</th>
-<th>VENC. DIAS</th>
-<th>ESTADO</th>
-
-</tr>
-
-<tr style="text-align:center">
-
-<td>---</td>
-<td>---</td>
-<td>---</td>
-<td>dd/mm/yyyy</td>
-<td>---</td>
-<td>---</td>
-<td>---</td>
-
-<td>dd/mm/yyyy</td>
-<td>---</td>
-<td>dd/mm/yyyy</td>
-<td>---</td>
-<td>---</td>
-
-<td>dd/mm/yyyy</td>
-<td>---</td>
-<td>dd/mm/yyyy</td>
-<td>---</td>
-<td>---</td>
-
-</tr>
-
-</table>
-"""
-
-st.markdown(tabla_html, unsafe_allow_html=True)
-
-st.markdown("---")
+st.info("⚠️ El archivo Excel debe contener una hoja llamada **'Acumulado Portal'**.")
 
 # --------------------------------------------------
-# CARGAR ARCHIVO
+# SUBIR ARCHIVO
 # --------------------------------------------------
 
-st.markdown("## 📂 Cargar archivo de capacitaciones")
+archivo = st.file_uploader("📂 Cargar archivo Excel", type=["xlsx"])
 
-uploaded_file = st.file_uploader(
-    "Arrastra o selecciona tu archivo Excel",
-    type=["xlsx","xlsm"]
-)
-
-# --------------------------------------------------
-# PROCESAR ARCHIVO
-# --------------------------------------------------
-
-if uploaded_file is not None:
-
-    st.success("Archivo cargado correctamente")
-
-    wb = openpyxl.load_workbook(uploaded_file, data_only=True)
-    ws = wb["Acumulado Portal"]
-
-    ult_fila = ws.max_row
-    ult_col = ws.max_column
-
-    # detectar cursos
-    cursos = []
-
-    for j in range(8, ult_col+1, 5):
-        cursos.append(ws.cell(row=1,column=j).value)
-
-    headers = [
-        "DNI","Nombre Completo","Cargo","F. Ingreso",
-        "Oficina","Centro Costo","Centro Costo Codigo",
-        "Curso","F. Dictado","Nota","Vencimiento",
-        "Venc. Dias","Estado"
-    ]
-
-    data = []
-
-    for i in range(3, ult_fila+1):
-
-        fila = [cell.value for cell in ws[i]]
-
-        if fila[0] is None:
-            continue
-
-        dni = fila[0]
-        nombre = fila[1]
-        cargo = fila[2]
-        f_ingreso = fila[3]
-        oficina = fila[4]
-        centro_costo = fila[5]
-        centro_costo_codigo = fila[6]
-
-        for idx, j in enumerate(range(7, ult_col, 5)):
-
-            if j+4 >= len(fila):
-                break
-
-            curso = cursos[idx]
-
-            f_dictado = fila[j]
-            nota = fila[j+1]
-            vencimiento = fila[j+2]
-            venc_dias = fila[j+3]
-            estado = fila[j+4]
-
-            if any([f_dictado, vencimiento]):
-
-                data.append([
-                    dni,nombre,cargo,f_ingreso,oficina,
-                    centro_costo,centro_costo_codigo,
-                    curso,f_dictado,nota,vencimiento,
-                    venc_dias,estado
-                ])
-
-    df = pd.DataFrame(data, columns=headers)
+if archivo:
 
     # --------------------------------------------------
-    # CALCULAR ESTADOS
+    # VALIDAR HOJA
     # --------------------------------------------------
 
-    hoy = pd.Timestamp.today().normalize()
+    hojas = pd.ExcelFile(archivo).sheet_names
 
-    df["F. Dictado"] = pd.to_datetime(df["F. Dictado"],errors="coerce",dayfirst=True)
-    df["Vencimiento"] = pd.to_datetime(df["Vencimiento"],errors="coerce",dayfirst=True)
-
-    df["Venc. Dias"] = (df["Vencimiento"] - hoy).dt.days
-
-    df.loc[df["Vencimiento"].isna(),"Estado"] = "VIGENTE"
-    df.loc[df["Venc. Dias"] < 0,"Estado"] = "VENCIDO"
-    df.loc[(df["Venc. Dias"]>=0) & (df["Venc. Dias"]<=30),"Estado"] = "POR VENCER"
-    df.loc[df["Venc. Dias"]>30,"Estado"] = "VIGENTE"
+    if "Acumulado Portal" not in hojas:
+        st.error("❌ El archivo no contiene la hoja **'Acumulado Portal'**. Verifique el nombre.")
+        st.stop()
 
     # --------------------------------------------------
-    # KPIs
+    # LEER DATA
     # --------------------------------------------------
 
-    st.markdown("### 📈 Resumen de Capacitaciones")
+    df = pd.read_excel(archivo, sheet_name="Acumulado Portal", header=1)
 
-    vigentes = (df["Estado"]=="VIGENTE").sum()
-    por_vencer = (df["Estado"]=="POR VENCER").sum()
-    vencidos = (df["Estado"]=="VENCIDO").sum()
+    st.success("Archivo cargado correctamente.")
 
-    c1,c2,c3 = st.columns(3)
+    # --------------------------------------------------
+    # BUSCAR COLUMNAS DE ESTADO
+    # --------------------------------------------------
 
-    c1.metric("🟢 Vigentes", vigentes)
-    c2.metric("🟡 Por vencer", por_vencer)
-    c3.metric("🔴 Vencidos", vencidos)
+    columnas_estado = [col for col in df.columns if "ESTADO" in str(col).upper()]
+
+    vigentes = 0
+    por_vencer = 0
+    vencidos = 0
+
+    for col in columnas_estado:
+        vigentes += (df[col] == "VIGENTE").sum()
+        por_vencer += (df[col] == "POR VENCER").sum()
+        vencidos += (df[col] == "VENCIDO").sum()
+
+    # --------------------------------------------------
+    # RESUMEN
+    # --------------------------------------------------
+
+    st.subheader("Resumen de Capacitaciones")
+
+    c1, c2, c3 = st.columns(3)
+
+    with c1:
+        st.markdown(
+            f"<div class='metric-box verde'>🟢 Vigentes<br><h2>{vigentes}</h2></div>",
+            unsafe_allow_html=True
+        )
+
+    with c2:
+        st.markdown(
+            f"<div class='metric-box amarillo'>🟡 Por vencer<br><h2>{por_vencer}</h2></div>",
+            unsafe_allow_html=True
+        )
+
+    with c3:
+        st.markdown(
+            f"<div class='metric-box rojo'>🔴 Vencidos<br><h2>{vencidos}</h2></div>",
+            unsafe_allow_html=True
+        )
 
     # --------------------------------------------------
     # TABLA
     # --------------------------------------------------
 
-    st.markdown("### 📊 Vista previa")
+    st.subheader("Datos cargados")
 
-    st.dataframe(
-        df,
-        use_container_width=True,
-        height=500
-    )
+    st.dataframe(df)
 
-    # --------------------------------------------------
-    # EXPORTAR EXCEL
-    # --------------------------------------------------
+else:
 
-    output = BytesIO()
-    df.to_excel(output,index=False)
-    output.seek(0)
-
-    wb2 = openpyxl.load_workbook(output)
-    ws2 = wb2.active
-
-    thin = Side(style="thin")
-    border = Border(left=thin,right=thin,top=thin,bottom=thin)
-
-    fill_map = {
-        "VENCIDO":"FF4C4C",
-        "POR VENCER":"FFF2CC",
-        "VIGENTE":"A7D129"
-    }
-
-    for row in ws2.iter_rows(min_row=2):
-
-        estado = row[12].value
-        color = fill_map.get(str(estado).upper(),None)
-
-        for cell in row:
-
-            cell.border = border
-            cell.alignment = Alignment(wrap_text=True)
-
-            if color:
-                cell.fill = PatternFill(
-                    start_color=color,
-                    end_color=color,
-                    fill_type="solid"
-                )
-
-    for cell in ws2[1]:
-        cell.font = Font(bold=True)
-        cell.border = border
-
-    output_final = BytesIO()
-    wb2.save(output_final)
-    output_final.seek(0)
-
-    st.markdown("### 📥 Descargar reporte")
-
-    st.download_button(
-        "⬇️ Descargar Excel Profesional TALMA",
-        data=output_final,
-        file_name="Capacitaciones_TALMA_Profesional.xlsx",
-        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    )
+    st.warning("Sube un archivo para comenzar.")
