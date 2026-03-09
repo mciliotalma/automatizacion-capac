@@ -5,7 +5,11 @@ Created on Mon Mar  9 09:07:40 2026
 @author: mcilio
 """
 
-# app_capacitacion_talma_final.py
+# -*- coding: utf-8 -*-
+"""
+Reporte Profesional de Capacitaciones TALMA
+"""
+
 import streamlit as st
 import pandas as pd
 import openpyxl
@@ -14,70 +18,107 @@ from io import BytesIO
 from openpyxl.styles import Alignment, Border, Side, Font, PatternFill
 from openpyxl.utils import get_column_letter
 
-# -----------------------------
-# Configuración de página
-# -----------------------------
-st.set_page_config(page_title="Reporte de Capacitaciones TALMA", layout="wide")
+# ---------------------------------
+# CONFIGURACIÓN DE PÁGINA
+# ---------------------------------
 
-# -----------------------------
-# CSS personalizado TALMA
-# -----------------------------
+st.set_page_config(
+    page_title="Reporte TALMA",
+    page_icon="📊",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
+# ---------------------------------
+# CSS CORPORATIVO TALMA
+# ---------------------------------
+
 st.markdown("""
-    <style>
-        /* Sidebar azul TALMA */
-        .stSidebar { background-color: #004C97; color: #FFFFFF; }
+<style>
 
-        /* Texto de títulos y subtítulos */
-        h1, h2, h3 { color: #004C97; }
+.main {
+background-color:#f4f7fb;
+}
 
-        /* Botones de descarga y submit (verde corporativo) */
-        .stButton>button, .stDownloadButton>button {
-            background-color: #A7D129;
-            color: #004C97;
-            font-weight: bold;
-        }
+h1,h2,h3{
+color:#004C97;
+}
 
-        /* Botón "Browse files" y input de archivo */
-        .css-1hwfws3 input[type="file"] {
-            color: black;
-            background-color: white;
-        }
+.stSidebar{
+background-color:#004C97;
+color:white;
+}
 
-        .css-1hwfws3 input[type="file"]::file-selector-button {
-            color: black;
-            background-color: white;
-            border: 1px solid #004C97;
-            padding: 4px 8px;
-            margin-right: 10px;
-        }
+.stButton>button{
+background-color:#A7D129;
+color:#004C97;
+font-weight:bold;
+}
 
-        /* Fondo general de la app */
-        .main { background-color: #f0f4f8; }
-    </style>
+.stDownloadButton>button{
+background-color:#A7D129;
+color:#004C97;
+font-weight:bold;
+}
+
+</style>
 """, unsafe_allow_html=True)
 
-# -----------------------------
-# Cabecera con logo a la izquierda
-# -----------------------------
-col1, col2 = st.columns([1, 5])
-with col1:
-    st.image("logo.jpg", width=120)
-with col2:
-    st.markdown("## 📊 Reporte Profesional de Capacitaciones TALMA")
+# ---------------------------------
+# HEADER CORPORATIVO
+# ---------------------------------
 
-# -----------------------------
-# Barra lateral para subir archivo
-# -----------------------------
-st.sidebar.header("Opciones")
-uploaded_file = st.sidebar.file_uploader("Sube tu archivo Excel (.xlsx/.xlsm)", type=["xlsx","xlsm"])
+st.markdown("""
+<div style="
+background: linear-gradient(90deg,#004C97,#0072CE);
+padding:20px;
+border-radius:10px;
+display:flex;
+align-items:center;
+gap:20px">
+
+<img src="https://upload.wikimedia.org/wikipedia/commons/thumb/3/3b/Logo-placeholder.png/240px-Logo-placeholder.png" width="80">
+
+<div>
+<h2 style="color:white;margin:0;">
+📊 Reporte Profesional de Capacitaciones TALMA
+</h2>
+
+<p style="color:white;margin:0;">
+Sistema automatizado de control de vigencia de capacitaciones
+</p>
+
+</div>
+
+</div>
+""", unsafe_allow_html=True)
+
+st.write("")
+
+# ---------------------------------
+# UPLOADER CENTRADO
+# ---------------------------------
+
+st.markdown("### 📂 Cargar archivo de capacitaciones")
+
+col1,col2,col3 = st.columns([1,2,1])
+
+with col2:
+    uploaded_file = st.file_uploader(
+        "Arrastra o selecciona tu archivo Excel",
+        type=["xlsx","xlsm"]
+    )
+
+# ---------------------------------
+# PROCESAR ARCHIVO
+# ---------------------------------
 
 if uploaded_file is not None:
-    st.sidebar.info("Procesando archivo...")
 
-    # -----------------------------
-    # Cargar workbook
-    # -----------------------------
+    st.success("✅ Archivo cargado correctamente")
+
     wb = openpyxl.load_workbook(uploaded_file, data_only=True)
+
     ws = wb['Acumulado Portal']
 
     headers = [
@@ -90,18 +131,25 @@ if uploaded_file is not None:
 
     ult_fila = ws.max_row
     ult_col = ws.max_column
+
     cursos = [ws.cell(row=1, column=j).value for j in range(8, ult_col+1, 5)]
 
-    # -----------------------------
-    # Transformar datos
-    # -----------------------------
+    # ---------------------------------
+    # TRANSFORMAR DATOS
+    # ---------------------------------
+
     for i in range(2, ult_fila + 1):
+
         fila = [cell.value for cell in ws[i]]
+
         if len(fila) < 7:
             continue
+
         dni = fila[0]
+
         if str(dni).strip().upper() == "DNI":
             continue
+
         nombre = fila[1]
         cargo = fila[2]
         f_ingreso = fila[3]
@@ -110,8 +158,10 @@ if uploaded_file is not None:
         centro_costo_codigo = fila[6]
 
         for idx, j in enumerate(range(7, ult_col, 5)):
+
             if j + 4 >= len(fila):
                 break
+
             curso = cursos[idx]
             f_dictado = fila[j]
             nota = fila[j+1]
@@ -120,54 +170,77 @@ if uploaded_file is not None:
             estado = fila[j+4]
 
             if any([curso, f_dictado, nota, vencimiento, venc_dias, estado]):
+
                 data.append([
                     dni, nombre, cargo, f_ingreso, oficina,
                     centro_costo, centro_costo_codigo,
-                    curso, f_dictado, nota, vencimiento, venc_dias, estado
+                    curso, f_dictado, nota, vencimiento,
+                    venc_dias, estado
                 ])
 
     df = pd.DataFrame(data, columns=headers)
 
-    # -----------------------------
-    # Calcular Venc. Dias y Estado
-    # -----------------------------
+    # ---------------------------------
+    # CALCULAR ESTADOS
+    # ---------------------------------
+
     hoy = pd.Timestamp.today().normalize()
+
     df['F. Dictado'] = pd.to_datetime(df['F. Dictado'], errors='coerce', dayfirst=True)
+
     df['Vencimiento'] = pd.to_datetime(df['Vencimiento'], errors='coerce', dayfirst=True)
+
     df['Venc. Dias'] = (df['Vencimiento'] - hoy).dt.days
+
     df.loc[df['Vencimiento'].isna(),'Estado'] = 'VIGENTE'
     df.loc[df['Venc. Dias'] < 0,'Estado'] = 'VENCIDO'
     df.loc[(df['Venc. Dias'] >=0) & (df['Venc. Dias'] <=30),'Estado'] = 'POR VENCER'
     df.loc[df['Venc. Dias'] > 30,'Estado'] = 'VIGENTE'
 
-    # -----------------------------
-    # Vista previa con colores corporativos
-    # -----------------------------
-    def color_estado(val):
-        if val == "VENCIDO":
-            return 'background-color: #FF4C4C; color: white; font-weight:bold;'
-        elif val == "POR VENCER":
-            return 'background-color: #FFEB9C; font-weight:bold;'
-        elif val == "VIGENTE":
-            return 'background-color: #A7D129; font-weight:bold;'
-        else:
-            return ''
+    # ---------------------------------
+    # KPI DASHBOARD
+    # ---------------------------------
 
-    st.subheader("Vista previa de la tabla")
+    st.markdown("### 📈 Resumen de Capacitaciones")
+
+    vigentes = (df["Estado"]=="VIGENTE").sum()
+    por_vencer = (df["Estado"]=="POR VENCER").sum()
+    vencidos = (df["Estado"]=="VENCIDO").sum()
+
+    c1,c2,c3 = st.columns(3)
+
+    c1.metric("🟢 Vigentes", vigentes)
+    c2.metric("🟡 Por vencer", por_vencer)
+    c3.metric("🔴 Vencidos", vencidos)
+
+    # ---------------------------------
+    # TABLA
+    # ---------------------------------
+
+    st.markdown("### 📊 Vista previa de la tabla")
+
     st.dataframe(
-        df.style.applymap(color_estado, subset=['Estado'])
+        df,
+        use_container_width=True,
+        height=500
     )
 
-    # -----------------------------
-    # Generar Excel formateado
-    # -----------------------------
+    # ---------------------------------
+    # GENERAR EXCEL FORMATEADO
+    # ---------------------------------
+
     output = BytesIO()
+
     df.to_excel(output, index=False, engine='openpyxl')
+
     output.seek(0)
+
     wb2 = openpyxl.load_workbook(output)
+
     ws2 = wb2.active
 
     thin = Side(style='thin')
+
     border = Border(left=thin,right=thin,top=thin,bottom=thin)
 
     fill_map = {
@@ -177,44 +250,70 @@ if uploaded_file is not None:
     }
 
     for row in ws2.iter_rows(min_row=2):
+
         estado_cell = row[12]
+
         estado_value = estado_cell.value
+
         fill_color = fill_map.get(str(estado_value).upper(), None)
+
         for cell in row:
+
             cell.border = border
+
             cell.alignment = Alignment(wrap_text=True, vertical='top')
+
             if fill_color:
-                cell.fill = PatternFill(start_color=fill_color, end_color=fill_color, fill_type="solid")
+
+                cell.fill = PatternFill(
+                    start_color=fill_color,
+                    end_color=fill_color,
+                    fill_type="solid"
+                )
 
     for cell in ws2[1]:
-        cell.font = Font(bold=True)
-        cell.border = border
-        cell.alignment = Alignment(wrap_text=True, vertical='center')
 
-    # Ajustar ancho columnas
+        cell.font = Font(bold=True)
+
+        cell.border = border
+
+        cell.alignment = Alignment(
+            wrap_text=True,
+            vertical='center'
+        )
+
     for col in ws2.columns:
+
         max_length = 0
+
         column = col[0].column
+
         for cell in col:
+
             if cell.value:
-                max_length = max(max_length, len(str(cell.value)))
+
+                max_length = max(max_length,len(str(cell.value)))
+
         ws2.column_dimensions[get_column_letter(column)].width = min(max_length+2,40)
 
-    # Ajustar altura filas
     for row in ws2.iter_rows():
+
         ws2.row_dimensions[row[0].row].height = 20
 
-    # Guardar Excel final en memoria
     output_final = BytesIO()
+
     wb2.save(output_final)
+
     output_final.seek(0)
 
-    # -----------------------------
-    # Botón de descarga
-    # -----------------------------
-    st.subheader("Descargar archivo final")
+    # ---------------------------------
+    # BOTÓN DESCARGA
+    # ---------------------------------
+
+    st.markdown("### 📥 Descargar Reporte")
+
     st.download_button(
-        label="⬇️ Descargar Excel profesional TALMA",
+        "⬇️ Descargar Excel Profesional TALMA",
         data=output_final,
         file_name="Capacitaciones_Profesional_TALMA.xlsx",
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
