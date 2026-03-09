@@ -5,7 +5,7 @@ Created on Mon Mar  9 09:07:40 2026
 @author: mcilio
 """
 
-# app_capacitacion_talma.py
+# app_capacitacion_talma_final.py
 import streamlit as st
 import pandas as pd
 import openpyxl
@@ -18,25 +18,55 @@ from openpyxl.utils import get_column_letter
 # Configuración de página
 # -----------------------------
 st.set_page_config(page_title="Reporte de Capacitaciones TALMA", layout="wide")
+
+# -----------------------------
+# CSS personalizado TALMA
+# -----------------------------
 st.markdown("""
     <style>
-        .main { background-color: #f0f4f8; }
-        h1 { color: #004C97; }
-        h2 { color: #004C97; }
-        .stButton>button { background-color: #A7D129; color: #004C97; font-weight: bold; }
-        .stDownloadButton>button { background-color: #A7D129; color: #004C97; font-weight: bold; }
+        /* Sidebar azul TALMA */
         .stSidebar { background-color: #004C97; color: #FFFFFF; }
+
+        /* Texto de títulos y subtítulos */
+        h1, h2, h3 { color: #004C97; }
+
+        /* Botones de descarga y submit (verde corporativo) */
+        .stButton>button, .stDownloadButton>button {
+            background-color: #A7D129;
+            color: #004C97;
+            font-weight: bold;
+        }
+
+        /* Botón "Browse files" y input de archivo */
+        .css-1hwfws3 input[type="file"] {
+            color: black;
+            background-color: white;
+        }
+
+        .css-1hwfws3 input[type="file"]::file-selector-button {
+            color: black;
+            background-color: white;
+            border: 1px solid #004C97;
+            padding: 4px 8px;
+            margin-right: 10px;
+        }
+
+        /* Fondo general de la app */
+        .main { background-color: #f0f4f8; }
     </style>
 """, unsafe_allow_html=True)
 
 # -----------------------------
-# Logo
+# Cabecera con logo a la izquierda
 # -----------------------------
-st.image("logo.jpg", width=200)
-st.title("📊 Reporte Profesional de Capacitaciones")
+col1, col2 = st.columns([1, 5])
+with col1:
+    st.image("logo.jpg", width=120)
+with col2:
+    st.markdown("## 📊 Reporte Profesional de Capacitaciones TALMA")
 
 # -----------------------------
-# Barra lateral para opciones
+# Barra lateral para subir archivo
 # -----------------------------
 st.sidebar.header("Opciones")
 uploaded_file = st.sidebar.file_uploader("Sube tu archivo Excel (.xlsx/.xlsm)", type=["xlsx","xlsm"])
@@ -60,11 +90,10 @@ if uploaded_file is not None:
 
     ult_fila = ws.max_row
     ult_col = ws.max_column
-
     cursos = [ws.cell(row=1, column=j).value for j in range(8, ult_col+1, 5)]
 
     # -----------------------------
-    # Transformación de datos
+    # Transformar datos
     # -----------------------------
     for i in range(2, ult_fila + 1):
         fila = [cell.value for cell in ws[i]]
@@ -116,11 +145,11 @@ if uploaded_file is not None:
     # -----------------------------
     def color_estado(val):
         if val == "VENCIDO":
-            return 'background-color: #FF4C4C; color: white; font-weight:bold;'  # rojo tomate
+            return 'background-color: #FF4C4C; color: white; font-weight:bold;'
         elif val == "POR VENCER":
-            return 'background-color: #FFEB9C; font-weight:bold;'  # amarillo
+            return 'background-color: #FFEB9C; font-weight:bold;'
         elif val == "VIGENTE":
-            return 'background-color: #A7D129; font-weight:bold;'  # verde corporativo
+            return 'background-color: #A7D129; font-weight:bold;'
         else:
             return ''
 
@@ -190,4 +219,3 @@ if uploaded_file is not None:
         file_name="Capacitaciones_Profesional_TALMA.xlsx",
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
-
