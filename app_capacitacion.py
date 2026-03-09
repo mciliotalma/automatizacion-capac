@@ -5,7 +5,7 @@ Created on Mon Mar  9 09:07:40 2026
 @author: mcilio
 """
 
-# app_capacitacion_prof.py
+# app_capacitacion_talma.py
 import streamlit as st
 import pandas as pd
 import openpyxl
@@ -15,9 +15,24 @@ from openpyxl.styles import Alignment, Border, Side, Font, PatternFill
 from openpyxl.utils import get_column_letter
 
 # -----------------------------
-# Configuración de la página
+# Configuración de página
 # -----------------------------
-st.set_page_config(page_title="Reporte de Capacitaciones", layout="wide")
+st.set_page_config(page_title="Reporte de Capacitaciones TALMA", layout="wide")
+st.markdown("""
+    <style>
+        .main { background-color: #f0f4f8; }
+        h1 { color: #004C97; }
+        h2 { color: #004C97; }
+        .stButton>button { background-color: #A7D129; color: #004C97; font-weight: bold; }
+        .stDownloadButton>button { background-color: #A7D129; color: #004C97; font-weight: bold; }
+        .stSidebar { background-color: #004C97; color: #FFFFFF; }
+    </style>
+""", unsafe_allow_html=True)
+
+# -----------------------------
+# Logo
+# -----------------------------
+st.image("logo.png", width=200)
 st.title("📊 Reporte Profesional de Capacitaciones")
 
 # -----------------------------
@@ -46,11 +61,10 @@ if uploaded_file is not None:
     ult_fila = ws.max_row
     ult_col = ws.max_column
 
-    # Guardar nombres de cursos (fila 1)
     cursos = [ws.cell(row=1, column=j).value for j in range(8, ult_col+1, 5)]
 
     # -----------------------------
-    # Transformar datos
+    # Transformación de datos
     # -----------------------------
     for i in range(2, ult_fila + 1):
         fila = [cell.value for cell in ws[i]]
@@ -98,15 +112,15 @@ if uploaded_file is not None:
     df.loc[df['Venc. Dias'] > 30,'Estado'] = 'VIGENTE'
 
     # -----------------------------
-    # Vista previa con colores en Streamlit
+    # Vista previa con colores corporativos
     # -----------------------------
     def color_estado(val):
         if val == "VENCIDO":
-            return 'background-color: #f8d7da'  # rojo claro
+            return 'background-color: #FF4C4C; color: white; font-weight:bold;'  # rojo tomate
         elif val == "POR VENCER":
-            return 'background-color: #fff3cd'  # amarillo claro
+            return 'background-color: #FFEB9C; font-weight:bold;'  # amarillo
         elif val == "VIGENTE":
-            return 'background-color: #d4edda'  # verde claro
+            return 'background-color: #A7D129; font-weight:bold;'  # verde corporativo
         else:
             return ''
 
@@ -128,13 +142,13 @@ if uploaded_file is not None:
     border = Border(left=thin,right=thin,top=thin,bottom=thin)
 
     fill_map = {
-        "VENCIDO": "FFC7CE",      # rojo
-        "POR VENCER": "FFEB9C",   # amarillo
-        "VIGENTE": "C6EFCE"       # verde
+        "VENCIDO": "FF4C4C",
+        "POR VENCER": "FFEB9C",
+        "VIGENTE": "A7D129"
     }
 
     for row in ws2.iter_rows(min_row=2):
-        estado_cell = row[12]  # columna Estado
+        estado_cell = row[12]
         estado_value = estado_cell.value
         fill_color = fill_map.get(str(estado_value).upper(), None)
         for cell in row:
@@ -171,8 +185,8 @@ if uploaded_file is not None:
     # -----------------------------
     st.subheader("Descargar archivo final")
     st.download_button(
-        label="⬇️ Descargar Excel profesional",
+        label="⬇️ Descargar Excel profesional TALMA",
         data=output_final,
-        file_name="Capacitaciones_Profesional.xlsx",
+        file_name="Capacitaciones_Profesional_TALMA.xlsx",
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
