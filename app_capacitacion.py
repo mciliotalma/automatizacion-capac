@@ -32,7 +32,7 @@ st.markdown("""
 # -----------------------------
 # Logo
 # -----------------------------
-st.image("logo.png", width=200)
+st.image("logo.jpg", width=200)
 st.title("📊 Reporte Profesional de Capacitaciones")
 
 # -----------------------------
@@ -190,3 +190,4 @@ if uploaded_file is not None:
         file_name="Capacitaciones_Profesional_TALMA.xlsx",
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
+
