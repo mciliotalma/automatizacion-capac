@@ -60,7 +60,7 @@ border-radius:8px;
 """, unsafe_allow_html=True)
 
 # --------------------------------------------------
-# HEADER CON LOGO TALMA
+# HEADER CON LOGO
 # --------------------------------------------------
 
 col1, col2 = st.columns([1,6])
@@ -73,8 +73,7 @@ with col2:
     <div style="
     background: linear-gradient(90deg,#004C97,#005EB8);
     padding:20px;
-    border-radius:12px;
-    ">
+    border-radius:12px;">
     
     <h2 style="color:white;margin:0;">
     📊 Reporte Profesional de Capacitaciones TALMA
@@ -90,10 +89,62 @@ with col2:
 st.write("")
 
 # --------------------------------------------------
-# CARGA DE ARCHIVO
+# PLANTILLA DE FORMATO
 # --------------------------------------------------
 
-st.markdown("### 📂 Cargar archivo de capacitaciones")
+st.markdown("## 📄 Formato requerido del archivo")
+
+st.info("Puedes visualizar o descargar una plantilla para subir correctamente el archivo.")
+
+data_ejemplo = {
+
+    "DNI":[ "Cedula 1","Cedula 2","Cedula 3"],
+    "NOMBRE COMPLETO":[ "Nombre 1","Nombre 2","Nombre 3"],
+    "CARGO":[ "Cargo 1","Cargo 2","Cargo 3"],
+    "F. DE INGRESO":[ "01/01/2024","05/02/2023","10/03/2022"],
+    "OFICINA":[ "Oficina 1","Oficina 2","Oficina 3"],
+    "CENTRO COSTO":[ "Centro 1","Centro 2","Centro 3"],
+
+    "ADOC BÁSICO AV - F. DICTADO":[ "01/02/2024","",""],
+    "ADOC BÁSICO AV - VENCIMIENTO":[ "01/02/2026","",""],
+
+    "ARM - F. DICTADO":[ "05/03/2024","10/04/2024",""],
+    "ARM - VENCIMIENTO":[ "05/03/2026","10/04/2026",""],
+
+    "AVSEC CAT14 INI - F. DICTADO":[ "12/05/2024","15/06/2024","20/07/2024"],
+    "AVSEC CAT14 INI - VENCIMIENTO":[ "12/05/2026","15/06/2026","20/07/2026"]
+
+}
+
+df_ejemplo = pd.DataFrame(data_ejemplo)
+
+st.dataframe(
+    df_ejemplo,
+    use_container_width=True
+)
+
+# Crear plantilla Excel
+
+output_template = BytesIO()
+
+df_ejemplo.to_excel(output_template, index=False)
+
+output_template.seek(0)
+
+st.download_button(
+    label="⬇️ Descargar plantilla de formato",
+    data=output_template,
+    file_name="Plantilla_Formato_Capacitaciones_TALMA.xlsx",
+    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+)
+
+st.markdown("---")
+
+# --------------------------------------------------
+# CARGAR ARCHIVO REAL
+# --------------------------------------------------
+
+st.markdown("## 📂 Cargar archivo de capacitaciones")
 
 col1,col2,col3 = st.columns([1,2,1])
 
@@ -176,7 +227,7 @@ if uploaded_file is not None:
     df = pd.DataFrame(data, columns=headers)
 
     # --------------------------------------------------
-    # CALCULAR ESTADO
+    # CALCULAR ESTADOS
     # --------------------------------------------------
 
     hoy = pd.Timestamp.today().normalize()
@@ -212,7 +263,7 @@ if uploaded_file is not None:
     # TABLA
     # --------------------------------------------------
 
-    st.markdown("### 📊 Vista previa de la tabla")
+    st.markdown("### 📊 Vista previa")
 
     st.dataframe(
         df,
@@ -221,12 +272,12 @@ if uploaded_file is not None:
     )
 
     # --------------------------------------------------
-    # CREAR EXCEL FORMATEADO
+    # GENERAR EXCEL FORMATEADO
     # --------------------------------------------------
 
     output = BytesIO()
 
-    df.to_excel(output, index=False, engine='openpyxl')
+    df.to_excel(output, index=False)
 
     output.seek(0)
 
@@ -269,24 +320,6 @@ if uploaded_file is not None:
 
         cell.font = Font(bold=True)
         cell.border = border
-        cell.alignment = Alignment(wrap_text=True, vertical='center')
-
-    for col in ws2.columns:
-
-        max_length = 0
-        column = col[0].column
-
-        for cell in col:
-
-            if cell.value:
-
-                max_length = max(max_length, len(str(cell.value)))
-
-        ws2.column_dimensions[get_column_letter(column)].width = min(max_length+2,40)
-
-    for row in ws2.iter_rows():
-
-        ws2.row_dimensions[row[0].row].height = 20
 
     output_final = BytesIO()
 
@@ -294,11 +327,7 @@ if uploaded_file is not None:
 
     output_final.seek(0)
 
-    # --------------------------------------------------
-    # DESCARGA
-    # --------------------------------------------------
-
-    st.markdown("### 📥 Descargar Reporte")
+    st.markdown("### 📥 Descargar reporte")
 
     st.download_button(
         "⬇️ Descargar Excel Profesional TALMA",
