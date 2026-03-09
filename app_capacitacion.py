@@ -14,17 +14,23 @@ from io import BytesIO
 from openpyxl.styles import Alignment, Border, Side, Font, PatternFill
 from openpyxl.utils import get_column_letter
 
+# -----------------------------
+# Configuración de la página
+# -----------------------------
 st.set_page_config(page_title="Reporte de Capacitaciones", layout="wide")
 st.title("📊 Reporte Profesional de Capacitaciones")
 
+# -----------------------------
+# Barra lateral para opciones
+# -----------------------------
 st.sidebar.header("Opciones")
-uploaded_file = st.sidebar.file_uploader("Sube tu archivo Excel", type=["xlsx", "xlsm"])
+uploaded_file = st.sidebar.file_uploader("Sube tu archivo Excel (.xlsx/.xlsm)", type=["xlsx","xlsm"])
 
 if uploaded_file is not None:
     st.sidebar.info("Procesando archivo...")
 
     # -----------------------------
-    # Cargar Excel
+    # Cargar workbook
     # -----------------------------
     wb = openpyxl.load_workbook(uploaded_file, data_only=True)
     ws = wb['Acumulado Portal']
@@ -40,10 +46,11 @@ if uploaded_file is not None:
     ult_fila = ws.max_row
     ult_col = ws.max_column
 
+    # Guardar nombres de cursos (fila 1)
     cursos = [ws.cell(row=1, column=j).value for j in range(8, ult_col+1, 5)]
 
     # -----------------------------
-    # Transformación de datos
+    # Transformar datos
     # -----------------------------
     for i in range(2, ult_fila + 1):
         fila = [cell.value for cell in ws[i]]
@@ -58,6 +65,7 @@ if uploaded_file is not None:
         oficina = fila[4]
         centro_costo = fila[5]
         centro_costo_codigo = fila[6]
+
         for idx, j in enumerate(range(7, ult_col, 5)):
             if j + 4 >= len(fila):
                 break
@@ -67,6 +75,7 @@ if uploaded_file is not None:
             vencimiento = fila[j+2]
             venc_dias = fila[j+3]
             estado = fila[j+4]
+
             if any([curso, f_dictado, nota, vencimiento, venc_dias, estado]):
                 data.append([
                     dni, nombre, cargo, f_ingreso, oficina,
@@ -77,7 +86,7 @@ if uploaded_file is not None:
     df = pd.DataFrame(data, columns=headers)
 
     # -----------------------------
-    # Calculo automático de Venc. Dias y Estado
+    # Calcular Venc. Dias y Estado
     # -----------------------------
     hoy = pd.Timestamp.today().normalize()
     df['F. Dictado'] = pd.to_datetime(df['F. Dictado'], errors='coerce', dayfirst=True)
@@ -89,15 +98,22 @@ if uploaded_file is not None:
     df.loc[df['Venc. Dias'] > 30,'Estado'] = 'VIGENTE'
 
     # -----------------------------
-    # Vista previa en Streamlit
+    # Vista previa con colores en Streamlit
     # -----------------------------
+    def color_estado(val):
+        if val == "VENCIDO":
+            return 'background-color: #f8d7da'  # rojo claro
+        elif val == "POR VENCER":
+            return 'background-color: #fff3cd'  # amarillo claro
+        elif val == "VIGENTE":
+            return 'background-color: #d4edda'  # verde claro
+        else:
+            return ''
+
     st.subheader("Vista previa de la tabla")
-    st.dataframe(df.style.apply(
-        lambda x: ['background-color: #f8d7da' if v=="VENCIDO" else
-                   'background-color: #fff3cd' if v=="POR VENCER" else
-                   'background-color: #d4edda' if v=="VIGENTE" else ''
-                   for v in x['Estado']], axis=1
-    ))
+    st.dataframe(
+        df.style.applymap(color_estado, subset=['Estado'])
+    )
 
     # -----------------------------
     # Generar Excel formateado
@@ -112,9 +128,9 @@ if uploaded_file is not None:
     border = Border(left=thin,right=thin,top=thin,bottom=thin)
 
     fill_map = {
-        "VENCIDO": "FFC7CE",      # rojo claro
-        "POR VENCER": "FFEB9C",   # amarillo claro
-        "VIGENTE": "C6EFCE"       # verde claro
+        "VENCIDO": "FFC7CE",      # rojo
+        "POR VENCER": "FFEB9C",   # amarillo
+        "VIGENTE": "C6EFCE"       # verde
     }
 
     for row in ws2.iter_rows(min_row=2):
@@ -137,17 +153,15 @@ if uploaded_file is not None:
         max_length = 0
         column = col[0].column
         for cell in col:
-            try:
-                if cell.value:
-                    max_length = max(max_length,len(str(cell.value)))
-            except:
-                pass
+            if cell.value:
+                max_length = max(max_length, len(str(cell.value)))
         ws2.column_dimensions[get_column_letter(column)].width = min(max_length+2,40)
 
-    # Altura filas
+    # Ajustar altura filas
     for row in ws2.iter_rows():
         ws2.row_dimensions[row[0].row].height = 20
 
+    # Guardar Excel final en memoria
     output_final = BytesIO()
     wb2.save(output_final)
     output_final.seek(0)
