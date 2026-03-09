@@ -97,7 +97,7 @@ st.write("")
 # --------------------------------------------------
 
 st.markdown("## 📄 Formato requerido del archivo")
-st.info("El archivo Excel debe tener exactamente esta estructura y debe contener la pestaña llamada "Portal Acumulado")
+st.info("El archivo Excel debe tener exactamente esta estructura y debe contener la pestaña llamada "Portal Acumulado"")
 
 tabla_html = """
 <table style="border-collapse:collapse;width:100%;font-size:14px">
@@ -275,4 +275,5 @@ if uploaded_file:
         file_name="Capacitaciones_TALMA_Profesional.xlsx",
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
+
 
