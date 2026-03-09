@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Reporte Profesional de Capacitaciones TALMA - Versión completa
+Reporte Profesional de Capacitaciones TALMA - Completo con plantilla
 """
 
 import streamlit as st
@@ -21,7 +21,7 @@ st.set_page_config(
 )
 
 # --------------------------------------------------
-# ESTILO CORPORATIVO TALMA
+# ESTILO TALMA
 # --------------------------------------------------
 
 st.markdown("""
@@ -32,18 +32,15 @@ st.markdown("""
     border-radius:15px;
     background-color:#f4f7fb;
 }
-
 h1,h2,h3{
     color:#003A8F;
 }
-
 .stButton>button, .stDownloadButton>button{
     background-color:#A7D129;
     color:#004C97;
     font-weight:bold;
     border-radius:8px;
 }
-
 .metric-box{
     text-align:center;
     padding:20px;
@@ -51,7 +48,6 @@ h1,h2,h3{
     font-weight:bold;
     font-size:18px;
 }
-
 .verde{background-color:#28a745;color:white;}
 .amarillo{background-color:#ffc107;color:black;}
 .rojo{background-color:#dc3545;color:white;}
@@ -66,18 +62,47 @@ st.title("📊 Reporte Profesional de Capacitaciones TALMA")
 st.info("⚠️ El archivo Excel debe contener una hoja llamada **'Acumulado Portal'**")
 
 # --------------------------------------------------
-# SUBIR ARCHIVO
+# TABLA DE EJEMPLO DEL FORMATO
 # --------------------------------------------------
 
-uploaded_file = st.file_uploader(
-    "📂 Arrastra o selecciona tu archivo Excel",
-    type=["xlsx","xlsm"]
-)
+st.subheader("📄 Ejemplo de formato del archivo")
+
+data_ejemplo = {
+    "DNI": ["0954082780","0954082781","0954082782"],
+    "NOMBRE COMPLETO": ["ABAD HUACON SUSANNE PAMELA","PEREZ GARCIA JUAN","LOPEZ RAMIREZ ANA"],
+    "CARGO": ["AGENTE DE SERVICIO","SUPERVISOR","AGENTE DE SERVICIO"],
+    "F. DE INGRESO": ["16/10/2023","01/02/2022","15/03/2021"],
+    "OFICINA": ["GUAYAQUIL","LIMA","CALLAO"],
+    "CENTRO COSTO": ["PAX GYE","PAX LIM","PAX CLL"],
+    "CENTRO COSTO CODIGO": ["15030102","15030103","15030104"],
+    "Curso1 - F. DICTADO": ["01/01/2024","",""],
+    "Curso1 - NOTA": [10, "", ""],
+    "Curso1 - VENCIMIENTO": ["01/01/2026","",""],
+    "Curso1 - VENC. DIAS": [730,"",""],
+    "Curso1 - ESTADO": ["VIGENTE","",""],
+    "Curso2 - F. DICTADO": ["05/02/2024","10/03/2024",""],
+    "Curso2 - NOTA": [9,8,""],
+    "Curso2 - VENCIMIENTO": ["05/02/2026","10/03/2026",""],
+    "Curso2 - VENC. DIAS": [700, 720,""],
+    "Curso2 - ESTADO": ["VIGENTE","POR VENCER",""]
+}
+
+df_ejemplo = pd.DataFrame(data_ejemplo)
+
+st.dataframe(df_ejemplo, use_container_width=True, height=250)
+
+st.markdown("---")
+
+# --------------------------------------------------
+# SUBIR ARCHIVO REAL
+# --------------------------------------------------
+
+uploaded_file = st.file_uploader("📂 Cargar archivo Excel", type=["xlsx","xlsm"])
 
 if uploaded_file:
 
     # --------------------------------------------------
-    # LEER HOJA
+    # VALIDAR HOJA
     # --------------------------------------------------
 
     xls = pd.ExcelFile(uploaded_file)
@@ -88,11 +113,11 @@ if uploaded_file:
     df_raw = pd.read_excel(xls, sheet_name="Acumulado Portal", header=None)
 
     # --------------------------------------------------
-    # IDENTIFICAR ENCABEZADOS DOBLE FILA
+    # LEER DOBLE ENCABEZADO
     # --------------------------------------------------
 
-    header_curso = df_raw.iloc[0, 7:]  # fila 0, desde columna H
-    header_sub = df_raw.iloc[1, 7:]    # fila 1, desde columna H
+    header_curso = df_raw.iloc[0, 7:]
+    header_sub = df_raw.iloc[1, 7:]
 
     columnas = []
     for c1, c2 in zip(header_curso, header_sub):
@@ -103,13 +128,8 @@ if uploaded_file:
         else:
             columnas.append(f"{c1} - {c2}")
 
-    # Encabezados base
     base_cols = ["DNI","Nombre Completo","CARGO","F. Ingreso","OFICINA","CENTRO COSTO","CENTRO COSTO CODIGO"]
     all_columns = base_cols + columnas
-
-    # --------------------------------------------------
-    # LEER DATOS
-    # --------------------------------------------------
 
     df_data = df_raw.iloc[2:, :len(all_columns)]
     df_data.columns = all_columns
@@ -120,7 +140,6 @@ if uploaded_file:
     # --------------------------------------------------
 
     cursos = list(set([col.split(" - ")[0] for col in columnas if " - " in col]))
-
     registros = []
     for idx, row in df_data.iterrows():
         for curso in cursos:
@@ -129,7 +148,6 @@ if uploaded_file:
             venc = row.get(f"{curso} - VENCIMIENTO")
             dias = row.get(f"{curso} - VENC. DIAS")
             estado = row.get(f"{curso} - ESTADO")
-
             if pd.notna(f_dictado) or pd.notna(venc):
                 registros.append({
                     "DNI": row["DNI"],
@@ -146,18 +164,16 @@ if uploaded_file:
                     "Venc. Dias": dias,
                     "Estado": estado
                 })
-
     df_final = pd.DataFrame(registros)
 
     # --------------------------------------------------
-    # CALCULAR ESTADOS AUTOMÁTICOS
+    # CALCULAR ESTADOS
     # --------------------------------------------------
 
     hoy = pd.Timestamp.today().normalize()
     df_final["F. Dictado"] = pd.to_datetime(df_final["F. Dictado"], errors="coerce", dayfirst=True)
     df_final["Vencimiento"] = pd.to_datetime(df_final["Vencimiento"], errors="coerce", dayfirst=True)
     df_final["Venc. Dias"] = (df_final["Vencimiento"] - hoy).dt.days
-
     df_final.loc[df_final["Vencimiento"].isna(),"Estado"] = "VIGENTE"
     df_final.loc[df_final["Venc. Dias"] < 0,"Estado"] = "VENCIDO"
     df_final.loc[(df_final["Venc. Dias"] >=0) & (df_final["Venc. Dias"] <=30),"Estado"] = "POR VENCER"
@@ -178,7 +194,7 @@ if uploaded_file:
     c3.markdown(f"<div class='metric-box rojo'>🔴 Vencidos<br><h2>{vencidos}</h2></div>", unsafe_allow_html=True)
 
     # --------------------------------------------------
-    # TABLA FORMATEADA
+    # TABLA CON COLORES
     # --------------------------------------------------
 
     def color_estado(val):
@@ -195,7 +211,7 @@ if uploaded_file:
     st.dataframe(df_final.style.applymap(color_estado), height=500, use_container_width=True)
 
     # --------------------------------------------------
-    # EXPORTAR EXCEL FORMATEADO
+    # DESCARGAR EXCEL FORMATEADO
     # --------------------------------------------------
 
     output = BytesIO()
@@ -203,11 +219,9 @@ if uploaded_file:
     output.seek(0)
     wb2 = openpyxl.load_workbook(output)
     ws2 = wb2.active
-
     thin = Side(style='thin')
     border = Border(left=thin,right=thin,top=thin,bottom=thin)
     fill_map = {"VENCIDO":"FF4C4C","POR VENCER":"FFF2CC","VIGENTE":"A7D129"}
-
     for row in ws2.iter_rows(min_row=2):
         estado = row[12].value
         color = fill_map.get(str(estado).upper(), None)
@@ -223,7 +237,6 @@ if uploaded_file:
     output_final = BytesIO()
     wb2.save(output_final)
     output_final.seek(0)
-
     st.markdown("### 📥 Descargar reporte final")
     st.download_button(
         "⬇️ Descargar Excel Profesional TALMA",
