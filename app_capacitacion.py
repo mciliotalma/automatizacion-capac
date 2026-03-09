@@ -80,11 +80,11 @@ with col2:
     border-radius:12px;">
     
     <h2 style="color:white;margin:0;">
-    📊 Reporte Profesional de Capacitaciones TALMA
+    📊 Reporte Capacitaciones TALMA
     </h2>
     
     <p style="color:white;margin:0;">
-    Sistema automatizado de control de vigencia de capacitaciones
+    Control de vigencia de capacitaciones
     </p>
     
     </div>
@@ -97,7 +97,7 @@ st.write("")
 # --------------------------------------------------
 
 st.markdown("## 📄 Formato requerido del archivo")
-st.info("El archivo Excel debe tener exactamente esta estructura.")
+st.info("El archivo Excel debe tener exactamente esta estructura y debe contener la pestaña llamada "Portal Acumulado")
 
 tabla_html = """
 <table style="border-collapse:collapse;width:100%;font-size:14px">
@@ -206,9 +206,9 @@ if uploaded_file:
     vencidos = (df["Estado"]=="VENCIDO").sum()
 
     c1,c2,c3 = st.columns(3)
-    c1.markdown(f"<div class='metric-box verde'>🟢 Vigentes<br><h2>{vigentes}</h2></div>", unsafe_allow_html=True)
-    c2.markdown(f"<div class='metric-box amarillo'>🟡 Por vencer<br><h2>{por_vencer}</h2></div>", unsafe_allow_html=True)
-    c3.markdown(f"<div class='metric-box rojo'>🔴 Vencidos<br><h2>{vencidos}</h2></div>", unsafe_allow_html=True)
+    c1.markdown(f"<div class='metric-box verde'> Vigentes<br><h2>{vigentes}</h2></div>", unsafe_allow_html=True)
+    c2.markdown(f"<div class='metric-box amarillo'> Por vencer<br><h2>{por_vencer}</h2></div>", unsafe_allow_html=True)
+    c3.markdown(f"<div class='metric-box rojo'> Vencidos<br><h2>{vencidos}</h2></div>", unsafe_allow_html=True)
 
     # TABLA
     st.markdown("### 📊 Vista previa")
@@ -270,8 +270,9 @@ if uploaded_file:
 
     st.markdown("### 📥 Descargar reporte")
     st.download_button(
-        "⬇️ Descargar Excel Profesional TALMA",
+        "⬇️ Descargar archivo",
         data=output_final,
         file_name="Capacitaciones_TALMA_Profesional.xlsx",
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
+
