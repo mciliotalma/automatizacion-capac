@@ -157,7 +157,7 @@ if uploaded_file:
                "Curso","F. Dictado","Nota","Vencimiento","Venc. Dias","Estado"]
 
     data = []
-    for i in range(3, ult_fila+1):
+    for i in range(2, ult_fila+1):
         fila = [cell.value for cell in ws[i]]
         if fila[0] is None: 
             continue
@@ -275,6 +275,7 @@ if uploaded_file:
         file_name="Capacitaciones_TALMA_Profesional.xlsx",
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
+
 
 
 
